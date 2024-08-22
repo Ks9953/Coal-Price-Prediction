@@ -109,8 +109,3 @@ if st.button("Predict Final Allocation"):
     st.write(f"Model Mean Absolute Error: {allocation_mae}")
 
 
-port = os.getenv('PORT', 8501)
-
-if __name__ == "__main__":
-    st.set_option('server.port', port)
-    st.run('main.py', host='0.0.0.0', port=int(port))
