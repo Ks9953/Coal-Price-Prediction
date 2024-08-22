@@ -3,5 +3,5 @@ pandas
 scikit-learn
 numpy
 openpyxl
-pillow
+pillow==1.21.5
 zlib
