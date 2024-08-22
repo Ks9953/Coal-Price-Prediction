@@ -4,4 +4,4 @@ scikit-learn
 numpy
 openpyxl
 pillow
-zlib
+
