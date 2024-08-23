@@ -8,7 +8,7 @@ import streamlit as st
 import os
 
 # Load Data
-df = pd.read_excel('Coal_Bidder_Data.xlsx')  # Replace with your actual data
+df = pd.read_excel('Coal_Data.xlsx')  # Replace with your actual data
 
 # Clean the 'Month' and 'Year' columns
 df['Month'] = df['Month'].apply(lambda x: str(x).strip())
