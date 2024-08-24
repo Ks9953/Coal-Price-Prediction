@@ -1,24 +1,20 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
-import xgboost as xgb
+from sklearn.preprocessing import LabelEncoder
 import streamlit as st
-from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler
-from sklearn.feature_extraction import FeatureHasher
 
-# Load Data
+# Cache the data loading function
 @st.cache_data
 def load_data(file_path):
     return pd.read_excel(file_path)
 
-# Preprocess Data
+# Cache the data preprocessing function
 @st.cache_data
 def preprocess_data(df):
+    # Clean the 'Month' and 'Year' columns
     df['Month'] = df['Month'].apply(lambda x: str(x).strip().capitalize())
     df['Year'] = df['Year'].astype(str).apply(lambda x: x.split('.')[0])
     df['Date'] = pd.to_datetime(df['Month'] + ' ' + df['Year'], errors='coerce')
@@ -29,54 +25,40 @@ def preprocess_data(df):
     df['Grade'] = df['Grade'].fillna('Unknown')
     df['Quantity Offered'] = df['Quantity Offered'].fillna(df['Quantity Offered'].mean())
     df['Final Allocation'] = df['Final Allocation'].fillna(df['Final Allocation'].mean())
-    
     le_mine = LabelEncoder()
     df['Mine Name'] = le_mine.fit_transform(df['Mine Name'])
     le_grade = LabelEncoder()
     df['Grade'] = le_grade.fit_transform(df['Grade'])
     df = df.dropna(subset=['Final Allocation', 'Price'])
-    
     return df, le_mine, le_grade
 
-# Define Model Training
+# Cache the model training function
 @st.cache_resource
 def train_models(df):
+    # Split the data for Price Prediction
     X_price = df[['Mine Name', 'Grade', 'Allocated Qty', 'Quantity Offered', 'Month_Num', 'Year']]
     y_price = df['Price']
     X_price_train, X_price_test, y_price_train, y_price_test = train_test_split(X_price, y_price, test_size=0.2, random_state=42)
-    
-    price_model = xgb.XGBRegressor(
-        objective='reg:squarederror',
-        n_estimators=100,
-        learning_rate=0.1,
-        max_depth=5,
-        min_child_weight=1
-    )
+    price_model = RandomForestRegressor(n_estimators=100, random_state=42)
     price_model.fit(X_price_train, y_price_train)
     y_price_pred = price_model.predict(X_price_test)
     price_mae = mean_absolute_error(y_price_test, y_price_pred)
     
+    # Split the data for Final Allocation Prediction
     X_allocation = df[['Mine Name', 'Quantity Offered', 'Month_Num', 'Year']]
     y_allocation = df['Final Allocation']
     X_allocation_train, X_allocation_test, y_allocation_train, y_allocation_test = train_test_split(X_allocation, y_allocation, test_size=0.2, random_state=42)
-    
-    allocation_model = xgb.XGBRegressor(
-        objective='reg:squarederror',
-        n_estimators=100,
-        learning_rate=0.1,
-        max_depth=5,
-        min_child_weight=1
-    )
+    allocation_model = RandomForestRegressor(n_estimators=100, random_state=42)
     allocation_model.fit(X_allocation_train, y_allocation_train)
     y_allocation_pred = allocation_model.predict(X_allocation_test)
     allocation_mae = mean_absolute_error(y_allocation_test, y_allocation_pred)
     
     return price_model, price_mae, allocation_model, allocation_mae
 
-# Streamlit App
+# Streamlit app
 def main():
     st.title("Coal Market Predictions")
-    
+
     # Load and preprocess data
     df = load_data('Coal_Data.xlsx')
     df, le_mine, le_grade = preprocess_data(df)
